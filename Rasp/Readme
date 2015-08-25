@@ -1,0 +1,71 @@
+1) Notes 
+Reprequisite packages: 
+	ubuntu 12.04 (64 bits) 
+	open-jdk7 
+
+2) Install reprequisite package for
+
+
+3) Install toolchain 
+$./00_build_rootfs.sh 
+
+sudo git clone https://chromium.googlesource.com/chromium/tools/depot_tools.git /opt/depot_tools
+echo "export PATH=/opt/depot_tools:\$PATH" | sudo tee /etc/profile.d/depot_tools.sh
+
+sudo git clone https://github.com/raspberrypi/tools.git /opt/rpi_tools
+
+echo "export PATH=/opt/rpi_tools/arm-bcm2708/gcc-linaro-arm-linux-gnueabihf-raspbian-x64/bin:\$PATH" | sudo tee /etc/profile.d/rpi_tools.sh
+source /etc/profile
+
+
+32-bit toolchain 
+sudo git clone https://chromium.googlesource.com/chromium/tools/depot_tools.git /opt/depot_tools
+echo "export PATH=/opt/depot_tools:\$PATH" | sudo tee /etc/profile.d/depot_tools.sh
+
+sudo git clone https://github.com/raspberrypi/tools.git /opt/rpi_tools
+
+echo "export PATH=/opt/rpi_tools/arm-bcm2708/gcc-linaro-arm-linux-gnueabihf-raspbian/bin:\$PATH" | sudo tee /etc/profile.d/rpi_tools.sh
+source /etc/profile
+
+
+===================== build sysroot==============
+sudo apt-get install qemu-user-static debootstrap
+sudo debootstrap --arch armhf --foreign --include=g++,libasound2-dev,libpulse-dev,libudev-dev,libexpat1-dev,libnss3-dev,libgtk2.0-dev,libc6-dev wheezy rootfs
+sudo cp /usr/bin/qemu-arm-static rootfs/usr/bin/
+sudo chroot rootfs /debootstrap/debootstrap --second-stage
+find rootfs/usr/lib/arm-linux-gnueabihf -lname '/*' -printf '%p %l\n' | while read link target
+do
+    sudo ln -snfv "../../..${target}" "${link}"
+done
+find rootfs/usr/lib/arm-linux-gnueabihf/pkgconfig -printf "%f\n" | while read target 
+do
+    sudo ln -snfv "../../lib/arm-linux-gnueabihf/pkgconfig/${target}" rootfs/usr/share/pkgconfig/${target}
+done
+
+=================== Download source code ===================
+mkdir webrtc-checkout
+cd webrtc-checkout
+fetch webrtc
+
+
+================== Build =========================
+$ source ./00_dev.sh 
+$ gclient sync --no-history --with_branch_heads
+$ ninja -C src/$GYP_GENERATOR_OUTPUT/out/Release
+
+export GYP_CROSSCOMPILE=1
+export GYP_DEFINES="target_arch=arm arm_float_abi=hard clang=0 include_tests=0 sysroot=$(pwd)/rootfs" 
+export GYP_GENERATOR_OUTPUT='arm'
+
+
+
+export JAVA_HOME=/usr/lib/jvm/java-7-openjdk-amd64
+
+gclient sync --no-history --with_branch_heads
+
+
+
+================== Create the image =========================
+
+
+
